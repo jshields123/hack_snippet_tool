@@ -1,101 +1,137 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { Search, Copy, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { snippets } from "./data";
+
+export default function Component() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [searchResults, setSearchResults] = useState<typeof snippets>([]);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const { toast } = useToast();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const results = snippets.filter(
+      (snippet) =>
+        snippet.term.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        snippet.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setSearchResults(results);
+  };
+  const copyToClipboard = async (text: string, id: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      toast({
+        title: "Copied to clipboard",
+        description: "The snippet has been copied to your clipboard.",
+      });
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+      toast({
+        title: "Failed to copy",
+        description:
+          "There was an error copying the snippet to your clipboard.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+    <div
+      className="min-h-screen flex flex-col items-center justify-start p-4 bg-cover bg-center bg-[#0C0C0C]"
+      style={{
+        backgroundImage: "url('/placeholder.svg?height=1080&width=1920')",
+      }}
+    >
+      <div className="bg-[#0C0C0C] bg-opacity-80 p-8 rounded-lg w-full max-w-2xl border border-[#00FF00] mb-8">
+        <h1 className="text-4xl font-bold mb-6 text-[#00FF00] text-center font-mono">
+          PenTest Snippet Search
+        </h1>
+        <form onSubmit={handleSearch} className="space-y-4">
+          <div className="flex">
+            <Input
+              type="text"
+              placeholder="Search for snippets..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-grow font-mono bg-[#1C1C1C] text-[#00FF00] border-[#00FF00] placeholder-[#00FF00] placeholder-opacity-50"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <Button
+              type="submit"
+              className="ml-2 bg-[#1C1C1C] text-[#00FF00] border border-[#00FF00] hover:bg-[#2C2C2C]"
+            >
+              <Search className="h-4 w-4" />
+              <span className="sr-only">Search</span>
+            </Button>
+          </div>
+          <div className="flex justify-between space-x-2">
+            {["all", "code", "context"].map((filterOption) => (
+              <Button
+                key={filterOption}
+                variant="outline"
+                onClick={() => setFilter(filterOption)}
+                className={`flex-1 font-mono border-[#00FF00] ${
+                  filter === filterOption
+                    ? "bg-[#00FF00] text-[#0C0C0C]"
+                    : "bg-[#1C1C1C] text-[#00FF00] hover:bg-[#2C2C2C]"
+                }`}
+              >
+                {filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
+              </Button>
+            ))}
+          </div>
+        </form>
+      </div>
+
+      {searchResults.length > 0 && (
+        <div className="bg-[#0C0C0C] bg-opacity-80 p-8 rounded-lg w-full max-w-2xl border border-[#00FF00]">
+          {searchResults.map((snippet) => (
+            <div key={snippet.id} className="mb-6 last:mb-0">
+              <h2 className="text-2xl font-bold text-[#00FF00] mb-2 font-mono">
+                {snippet.term}
+              </h2>
+              <p className="text-[#00FF00] mb-2 font-mono">
+                {snippet.description}
+              </p>
+              <div className="bg-[#1C1C1C] p-4 rounded relative">
+                <code className="text-[#00FF00] font-mono">
+                  {snippet.codeSnippet}
+                </code>
+                <Button
+                  className="absolute top-2 right-2 bg-[#2C2C2C] text-[#00FF00] hover:bg-[#3C3C3C]"
+                  size="sm"
+                  onClick={() =>
+                    copyToClipboard(snippet.codeSnippet, snippet.id)
+                  }
+                >
+                  {copiedId === snippet.id ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <h3 className="text-xl font-bold text-[#00FF00] mt-4 mb-2 font-mono">
+                Examples:
+              </h3>
+              <ul className="list-disc list-inside">
+                {snippet.examples.map((example, index) => (
+                  <li key={index} className="text-[#00FF00] font-mono">
+                    {example}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
     </div>
   );
 }
